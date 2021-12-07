@@ -76,6 +76,7 @@ procedure main is
          Put_Line (S);
       end Print;
    end Printer;
+
    protected Building is
       function getRoom (x : Integer; y : Integer) return Boolean;
       procedure setRoom (x : Integer; y : Integer; infected : in Boolean);
