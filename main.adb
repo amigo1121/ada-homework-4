@@ -110,7 +110,7 @@ procedure main is
       while Active loop
          select
             accept Create_new do
-               delay 0.01; -- wait for the task Student terminated;
+             delay 0.01; -- wait for the task Student terminated;
                for i in 1 .. 5 loop
                   if Student_Arr (i)'Terminated then
                      Student_Arr (i) := new Student (Integer'Image (i), True);
