@@ -76,8 +76,26 @@ procedure main is
          Put_Line (S);
       end Print;
    end Printer;
+   protected Building is
+      function getRoom (x : Integer; y : Integer) return Boolean;
+      procedure setRoom (x : Integer; y : Integer; infected : in Boolean);
+   private
+      Rooms : Array2D (1 .. 10, 1 .. 10) := (others => (others => False));
+   end Building;
+   protected body Building is
+      function getRoom (x : in Integer; y : in Integer) return Boolean is
+         ans : Boolean;
+      begin
+         ans := Rooms (x) (y);
+         return ans;
+      end getRoom;
 
-   
+      procedure setRoom (x : Integer; y : Integer; infected : in Boolean) is
+      begin
+         Rooms (x) (y) := infected;
+      end setRoom;
+
+   end Building;
 
    -------------- Students constrol -----------------
    task Student_Control is
@@ -92,7 +110,7 @@ procedure main is
       while Active loop
          select
             accept Create_new do
-             delay 0.01; -- wait for the task Student terminated;
+               delay 0.01; -- wait for the task Student terminated;
                for i in 1 .. 5 loop
                   if Student_Arr (i)'Terminated then
                      Student_Arr (i) := new Student (Integer'Image (i), True);
