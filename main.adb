@@ -77,7 +77,26 @@ procedure main is
       end Print;
    end Printer;
 
-   
+   protected Building is
+      function getRoom (x : Integer; y : Integer) return Boolean;
+      procedure setRoom (x : Integer; y : Integer; infected : in Boolean);
+   private
+      Rooms : Array2D (1 .. 10, 1 .. 10) := (others => (others => False));
+   end Building;
+   protected body Building is
+      function getRoom (x : in Integer; y : in Integer) return Boolean is
+         ans : Boolean;
+      begin
+         ans := Rooms (x) (y);
+         return ans;
+      end getRoom;
+
+      procedure setRoom (x : Integer; y : Integer; infected : in Boolean) is
+      begin
+         Rooms (x) (y) := infected;
+      end setRoom;
+
+   end Building;
 
    -------------- Students constrol -----------------
    task Student_Control is
