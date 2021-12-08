@@ -12,13 +12,12 @@ procedure main is
       entry go_in (x : in Integer; y : in Integer; infect : in out Boolean);
       entry move_to (x : in Integer; y : in Integer; infect : in out Boolean);
       entry go_out;
-      entry close;
    end Uni;
-
+   type Uni_Access is access Uni;
    ------------ Global units --------
    delta_x    : array (Positive range 1 .. 4) of Integer := (-1, 0, 1, 0);
    delta_y    : array (Positive range 1 .. 4) of Integer := (0, 1, 0, -1);
-   University : access Uni;
+   University : Uni_Access;
    package My_random_int is new Ada.Numerics.Discrete_Random (Positive);
    use My_random_int;
 
@@ -87,13 +86,13 @@ procedure main is
       function getRoom (x : in Integer; y : in Integer) return Boolean is
          ans : Boolean;
       begin
-         ans := Rooms (x) (y);
+         ans := Rooms (x, y);
          return ans;
       end getRoom;
 
       procedure setRoom (x : Integer; y : Integer; infected : in Boolean) is
       begin
-         Rooms (x) (y) := infected;
+         Rooms (x, y) := infected;
       end setRoom;
 
    end Building;
@@ -111,17 +110,19 @@ procedure main is
       while Active loop
          select
             accept Create_new do
-             delay 0.01; -- wait for the task Student terminated;
+               delay 0.01; -- wait for the task Student terminated;
                for i in 1 .. 5 loop
                   if Student_Arr (i)'Terminated then
-                     Student_Arr (i) := new Student (Integer'Image (i), True);
+                     Student_Arr (i) :=
+                       new Student (new String'(Integer'Image (i)), False);
                   end if;
                end loop;
             end Create_new;
          or
             accept Init do
                for i in 1 .. 5 loop
-                  Student_Arr (i) := new Student (Integer'Image (i), True);
+                  Student_Arr (i) :=
+                    new Student (new String'(Integer'Image (i)), True);
                end loop;
             end Init;
          or
@@ -143,13 +144,9 @@ procedure main is
    begin
       Start_time := Clock;
       End_time   := Start_time + Stay_period;
-      select
-         University.go_in (x => X, y => Y, infect => Infected);
-         Printer.Print
-           ("Student:" & Name.all & " start at" & X'Image & Y'Image);
-      or
-         terminate;
-      end select;
+
+      University.go_in (x => X, y => Y, infect => Infected);
+      Printer.Print ("Student" & Name.all & " start at" & X'Image & Y'Image);
 
       -- choose direction
       loop
@@ -160,29 +157,18 @@ procedure main is
          end if;
       end loop;
       delay 0.5;--move after 0.5 seconds
-      select
-         --  move to new coordinates
-         University.move_to (x => X, y => Y, infect => Infected);
-         Printer.Print
-           ("Student:" & Name.all & " move to" & X'Image & Y'Image);
-      or
-         terminate;
-      end select;
+      --  move to new coordinates
+      University.move_to (x => X, y => Y, infect => Infected);
+      Printer.Print ("Student" & Name.all & " move to" & X'Image & Y'Image);
 
       delay until End_time;
-      select
-         University.go_out;
-         Printer.Print ("Student:" & Name.all & " go out");
-      or
-         terminate;
-      end select;
+      University.go_out;
+      Printer.Print ("Student" & Name.all & " go out");
       Student_Control.Create_new;
    end Student;
 
    -------------------- University ----------
    task body Uni is
-      Building_infected : Array2D (1 .. 10, 1 .. 10) :=
-        (others => (others => False));
       Max_limit         : Integer := 5;
       Open_duration     : Integer := 60;
       Infected_cells    : Integer := 0;
@@ -191,7 +177,7 @@ procedure main is
       Current_students  : Integer := 0;
       Start_time        : Time;
    begin
-
+      Start_time := Clock;
       while Clock - Start_time < Seconds (Open_duration)
       loop --open for 60 seconds
          select when Current_students <= Max_limit =>
@@ -202,12 +188,12 @@ procedure main is
                Current_students := Current_students + 1;
                if infect then
                   Infected_students := Infected_students + 1;
-                  if not Building_infected (x) (y) then
-                     Building_infected (x) (y) := True;
-                     Infected_cells            := Infected_cells + 1;
+                  if not Building.getRoom (x, y) then
+                     Building.setRoom (x, y, True);
+                     Infected_cells := Infected_cells + 1;
                   end if;
                else
-                  if Building_infected (x) (y) then
+                  if Building.getRoom (x, y) then
                      infect            := True;
                      Infected_students := Infected_students + 1;
                   end if;
@@ -215,6 +201,7 @@ procedure main is
             end go_in;
          or
             accept go_out do
+               delay 1.0; -- check each second
                Current_students := Current_students - 1;
             end go_out;
          or
@@ -222,29 +209,30 @@ procedure main is
               (x : in Integer; y : in Integer; infect : in out Boolean)
             do
                if infect then
-                  if not Building_infected (x) (y) then
-                     Building_infected (x) (y) := True;
-                     Infected_cells            := Infected_cells + 1;
+                  if not Building.getRoom (x, y) then
+                     Building.setRoom (x, y, True);
+                     Infected_cells := Infected_cells + 1;
                   end if;
                else
-                  if Building_infected (x) (y) then
+                  if Building.getRoom (x, y) then
                      infect            := True;
                      Infected_students := Infected_students + 1;
                   end if;
                end if;
             end move_to;
          end select;
-         delay 1.0; -- check each second
       end loop;
       -- ask all student go out
+      Student_Control.Stop;
+      Printer.Print
+        (Integer'Image (Infected_cells) & " percent of area is infected");
+      Printer.Print
+        (Integer'Image (Infected_students) & " Students got infected out of " &
+         Integer'Image (Total_students) & " visited the University");
    end Uni;
 
    ------------------------------------------
-   -- N: Student( new String'("nam"), False);
-   u : Integer := 10;
-   v : Integer := 10;
 begin
-   for i in 1 .. 4 loop
-      Put_Line (Boolean'Image (Can_move (u, v, i)));
-   end loop;
+   University := new Uni;
+   Student_Control.Init;
 end main;
