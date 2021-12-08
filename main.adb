@@ -144,10 +144,9 @@ procedure main is
    begin
       Start_time := Clock;
       End_time   := Start_time + Stay_period;
-      
-         University.go_in (x => X, y => Y, infect => Infected);
-         Printer.Print
-           ("Student" & Name.all & " start at" & X'Image & Y'Image );      
+
+      University.go_in (x => X, y => Y, infect => Infected);
+      Printer.Print ("Student" & Name.all & " start at" & X'Image & Y'Image);
 
       -- choose direction
       loop
@@ -158,14 +157,13 @@ procedure main is
          end if;
       end loop;
       delay 0.5;--move after 0.5 seconds
-         --  move to new coordinates
-         University.move_to (x => X, y => Y, infect => Infected);
-         Printer.Print
-           ("Student" & Name.all & " move to" & X'Image & Y'Image);
+      --  move to new coordinates
+      University.move_to (x => X, y => Y, infect => Infected);
+      Printer.Print ("Student" & Name.all & " move to" & X'Image & Y'Image);
 
       delay until End_time;
-         University.go_out;
-         Printer.Print ("Student" & Name.all & " go out");
+      University.go_out;
+      Printer.Print ("Student" & Name.all & " go out");
       Student_Control.Create_new;
    end Student;
 
@@ -203,6 +201,7 @@ procedure main is
             end go_in;
          or
             accept go_out do
+               delay 1.0; -- check each second
                Current_students := Current_students - 1;
             end go_out;
          or
@@ -222,12 +221,14 @@ procedure main is
                end if;
             end move_to;
          end select;
-         delay 1.0; -- check each second
       end loop;
       -- ask all student go out
       Student_Control.Stop;
-      Printer.Print (Integer'Image(Infected_cells) & " percent of area is infected");
-      Printer.Print (Integer'Image(Infected_students) & " Students got infected out of " & Integer'Image(Total_students) & " visited the University");
+      Printer.Print
+        (Integer'Image (Infected_cells) & " percent of area is infected");
+      Printer.Print
+        (Integer'Image (Infected_students) & " Students got infected out of " &
+         Integer'Image (Total_students) & " visited the University");
    end Uni;
 
    ------------------------------------------
